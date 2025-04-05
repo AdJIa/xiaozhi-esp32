@@ -298,3 +298,14 @@ std::string MqttProtocol::DecodeHexString(const std::string& hex_string) {
 bool MqttProtocol::IsAudioChannelOpened() const {
     return udp_ != nullptr && !error_occurred_ && !IsTimeout();
 }
+
+void MqttProtocol::SendNfcCardDetected(const std::string& card_id) {
+    std::string message = "{";
+    message += "\"session_id\":\"" + session_id_ + "\",";
+    message += "\"type\":\"nfc_card_detected\",";
+    message += "\"card_id\":\"" + card_id + "\"";
+    message += "}";
+    
+    ESP_LOGI(TAG, "Sending NFC card event: %s", message.c_str());
+    SendText(message);
+}

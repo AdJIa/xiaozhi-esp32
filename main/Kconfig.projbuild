@@ -243,4 +243,45 @@ config USE_WAKE_WORD_DETECT
     depends on IDF_TARGET_ESP32S3 && SPIRAM
     help
         需要 ESP32 S3 与 AFE 支持
+
+config ENABLE_NFC
+    bool "Enable NFC Card Reader"
+    default y
+    help
+        启用或禁用NFC读卡功能
+
+config NFC_SDA_GPIO
+    depends on ENABLE_NFC
+    int "NFC SDA (NSS) GPIO Pin"
+    default 5
+    help
+        NFC模块SDA/NSS引脚号
+
+config NFC_SCK_GPIO
+    depends on ENABLE_NFC
+    int "NFC SCK GPIO Pin"
+    default 18
+    help
+        NFC模块SCK引脚号
+
+config NFC_MOSI_GPIO
+    depends on ENABLE_NFC
+    int "NFC MOSI GPIO Pin"
+    default 23
+    help
+        NFC模块MOSI引脚号
+
+config NFC_MISO_GPIO
+    depends on ENABLE_NFC
+    int "NFC MISO GPIO Pin"
+    default 19
+    help
+        NFC模块MISO引脚号
+
+config NFC_RST_GPIO
+    depends on ENABLE_NFC
+    int "NFC RST GPIO Pin"
+    default 22
+    help
+        NFC模块RST引脚号
 endmenu

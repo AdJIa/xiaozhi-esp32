@@ -20,6 +20,9 @@ public:
     bool OpenAudioChannel() override;
     void CloseAudioChannel() override;
     bool IsAudioChannelOpened() const override;
+    
+    // 发送NFC卡片检测事件
+    void SendNfcCardDetected(const std::string& card_id);
 
 private:
     EventGroupHandle_t event_group_handle_;

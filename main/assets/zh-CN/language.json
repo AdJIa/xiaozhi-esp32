@@ -46,6 +46,12 @@
 
         "VOLUME":"音量 ",
         "MUTED":"已静音",
-        "MAX_VOLUME":"最大音量"
+        "MAX_VOLUME":"最大音量",
+        
+        "NFC_INITIALIZING":"正在初始化NFC...",
+        "NFC_READY":"NFC准备就绪",
+        "CARD_DETECTED":"检测到卡片",
+        "CARD_LEARNING":"正在学习卡片内容...",
+        "PLACE_CARD":"请贴近卡片"
     }
 }

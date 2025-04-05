@@ -44,6 +44,21 @@ void WebsocketProtocol::SendText(const std::string& text) {
     }
 }
 
+void WebsocketProtocol::SendNfcCardDetected(const std::string& card_id) {
+    if (websocket_ == nullptr || !websocket_->IsConnected()) {
+        ESP_LOGW(TAG, "Cannot send NFC card event: websocket not connected");
+        return;
+    }
+
+    std::string message = "{";
+    message += "\"type\":\"nfc_card_detected\",";
+    message += "\"card_id\":\"" + card_id + "\"";
+    message += "}";
+    
+    ESP_LOGI(TAG, "Sending NFC card event: %s", message.c_str());
+    SendText(message);
+}
+
 bool WebsocketProtocol::IsAudioChannelOpened() const {
     return websocket_ != nullptr && websocket_->IsConnected() && !error_occurred_ && !IsTimeout();
 }

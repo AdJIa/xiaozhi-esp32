@@ -9,6 +9,7 @@
 #include "font_awesome_symbols.h"
 #include "iot/thing_manager.h"
 #include "assets/lang_config.h"
+#include "nfc_manager.h"
 
 #include <cstring>
 #include <esp_log.h>
@@ -532,6 +533,11 @@ void Application::Start() {
     wake_word_detect_.StartDetection();
 #endif
 
+    // 初始化NFC模块
+    Schedule([this]() {
+        InitNfc();
+    });
+
     SetDeviceState(kDeviceStateIdle);
     esp_timer_start_periodic(clock_timer_handle_, 1000000);
 }
@@ -839,4 +845,58 @@ bool Application::CanEnterSleepMode() {
 
     // Now it is safe to enter sleep mode
     return true;
+}
+
+void Application::InitNfc() {
+#ifdef CONFIG_ENABLE_NFC
+    auto display = Board::GetInstance().GetDisplay();
+    display->ShowNotification(Lang::Strings::NFC_INITIALIZING, 5000);
+    
+    auto& nfc_manager = NfcManager::GetInstance();
+    
+    // 从Kconfig配置中获取GPIO引脚配置
+    gpio_num_t sda = (gpio_num_t)CONFIG_NFC_SDA_GPIO;   // SDA/NSS (片选)
+    gpio_num_t sck = (gpio_num_t)CONFIG_NFC_SCK_GPIO;   // SCK (时钟)
+    gpio_num_t mosi = (gpio_num_t)CONFIG_NFC_MOSI_GPIO; // MOSI (主出从入)
+    gpio_num_t miso = (gpio_num_t)CONFIG_NFC_MISO_GPIO; // MISO (主入从出)
+    gpio_num_t rst = (gpio_num_t)CONFIG_NFC_RST_GPIO;   // RST (复位)
+    
+    // 初始化NFC管理器
+    if (nfc_manager.init(sda, sck, mosi, miso, rst)) {
+        ESP_LOGI(TAG, "NFC初始化成功");
+        display->ShowNotification(Lang::Strings::NFC_READY, 3000);
+        
+        // 设置卡片检测回调
+        nfc_manager.setCardDetectedCallback([this](const std::string& card_id) {
+            ESP_LOGI(TAG, "检测到卡片: %s", card_id.c_str());
+            
+            auto display = Board::GetInstance().GetDisplay();
+            display->ShowNotification(Lang::Strings::CARD_DETECTED, 3000);
+            
+            // 播放声音提示
+            PlaySound(Lang::Sounds::P3_DING);
+            
+            // 通过WebSocket发送卡片ID
+            if (protocol_ != nullptr && protocol_->IsAudioChannelOpened()) {
+                protocol_->SendNfcCardDetected(card_id);
+            } else {
+                // 如果WebSocket未连接，尝试打开连接
+                SetDeviceState(kDeviceStateConnecting);
+                if (protocol_->OpenAudioChannel()) {
+                    protocol_->SendNfcCardDetected(card_id);
+                } else {
+                    display->ShowNotification(Lang::Strings::SERVER_NOT_CONNECTED, 3000);
+                }
+            }
+        });
+        
+        // 启动卡片检测
+        nfc_manager.startDetection();
+    } else {
+        ESP_LOGE(TAG, "NFC初始化失败");
+        display->ShowNotification(Lang::Strings::ERROR, 3000);
+    }
+#else
+    ESP_LOGI(TAG, "NFC功能未启用");
+#endif
 }

@@ -52,6 +52,7 @@ public:
     virtual void SendAbortSpeaking(AbortReason reason);
     virtual void SendIotDescriptors(const std::string& descriptors);
     virtual void SendIotStates(const std::string& states);
+    virtual void SendNfcCardDetected(const std::string& card_id) = 0;
 
 protected:
     std::function<void(const cJSON* root)> on_incoming_json_;

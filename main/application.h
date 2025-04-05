@@ -71,6 +71,9 @@ public:
     void PlaySound(const std::string_view& sound);
     bool CanEnterSleepMode();
 
+    // NFC相关方法
+    void InitNfc();
+
 private:
     Application();
     ~Application();
