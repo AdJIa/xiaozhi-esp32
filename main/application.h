@@ -17,6 +17,7 @@
 #include "protocol.h"
 #include "ota.h"
 #include "background_task.h"
+#include "nfc/nfc_manager.h"
 
 #if CONFIG_USE_WAKE_WORD_DETECT
 #include "wake_word_detect.h"
@@ -70,6 +71,12 @@ public:
     void WakeWordInvoke(const std::string& wake_word);
     void PlaySound(const std::string_view& sound);
     bool CanEnterSleepMode();
+    
+    // NFC相关方法
+    void InitializeNfc();
+    void OnNfcCardDetected(const NfcCard& card);
+
+    static bool nfc_initialized_;  // 添加静态成员变量声明
 
 private:
     Application();

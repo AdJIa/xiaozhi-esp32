@@ -115,6 +115,11 @@ void Protocol::SendIotStates(const std::string& states) {
     SendText(message);
 }
 
+void Protocol::SendNfcCardDetected(const std::string& card_id) {
+    std::string message = "{\"session_id\":\"" + session_id_ + "\",\"type\":\"nfc_card_detected\",\"card_id\":\"" + card_id + "\"}";
+    SendText(message);
+}
+
 bool Protocol::IsTimeout() const {
     const int kTimeoutSeconds = 120;
     auto now = std::chrono::steady_clock::now();

@@ -12,6 +12,7 @@ set(SOURCES "audio_codecs/audio_codec.cc"
             "protocols/protocol.cc"
             "iot/thing.cc"
             "iot/thing_manager.cc"
+            "nfc/nfc_manager.cc"
             "system_info.cc"
             "application.cc"
             "ota.cc"
@@ -20,7 +21,7 @@ set(SOURCES "audio_codecs/audio_codec.cc"
             "main.cc"
             )
 
-set(INCLUDE_DIRS "." "display" "audio_codecs" "protocols" "audio_processing")
+set(INCLUDE_DIRS "." "display" "audio_codecs" "protocols" "audio_processing" "nfc")
 
 # 添加 IOT 相关文件
 file(GLOB IOT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/iot/things/*.cc)
@@ -193,6 +194,9 @@ endif()
 target_compile_definitions(${COMPONENT_LIB}
                     PRIVATE BOARD_TYPE=\"${BOARD_TYPE}\" BOARD_NAME=\"${BOARD_NAME}\"
                     )
+
+# 添加-fpermissive标志以允许某些类型转换
+target_compile_options(${COMPONENT_LIB} PRIVATE -fpermissive)
 
 # 添加生成规则
 add_custom_command(

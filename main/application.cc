@@ -9,6 +9,7 @@
 #include "font_awesome_symbols.h"
 #include "iot/thing_manager.h"
 #include "assets/lang_config.h"
+#include "nfc/nfc_manager.h"
 
 #include <cstring>
 #include <esp_log.h>
@@ -19,6 +20,7 @@
 
 #define TAG "Application"
 
+bool Application::nfc_initialized_ = false;  // 初始化静态成员变量
 
 static const char* const STATE_STRINGS[] = {
     "unknown",
@@ -49,6 +51,8 @@ Application::Application() {
         .skip_unhandled_events = true
     };
     esp_timer_create(&clock_timer_args, &clock_timer_handle_);
+
+    InitializeNfc();
 }
 
 Application::~Application() {
@@ -870,4 +874,65 @@ bool Application::CanEnterSleepMode() {
 
     // Now it is safe to enter sleep mode
     return true;
+}
+
+void Application::InitializeNfc() {
+    if (nfc_initialized_) {
+        return;
+    }
+    
+    ESP_LOGI(TAG, "NFC initialized start");
+#if CONFIG_ENABLE_NFC
+    // 在后台任务中初始化NFC，避免阻塞主线程
+    Schedule([this]() {
+        auto& nfc_manager = NfcManager::GetInstance();
+        if (nfc_manager.Initialize()) {
+            ESP_LOGI(TAG, "NFC initialized successfully");
+            // 设置卡片检测回调
+            nfc_manager.SetCardDetectedCallback([this](const NfcCard& card) {
+                this->OnNfcCardDetected(card);
+            });
+            // 开始检测
+            nfc_manager.StartDetection(500); // 每500ms检测一次
+            nfc_initialized_ = true;  // 设置初始化标志
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize NFC");
+        }
+    });
+#else
+    ESP_LOGW(TAG, "NFC functionality is disabled in config");
+    nfc_initialized_ = true;  // 即使NFC被禁用，也设置初始化标志
+#endif
+}
+
+void Application::OnNfcCardDetected(const NfcCard& card) {
+    ESP_LOGI(TAG, "NFC card detected, UID: %s", card.uid.c_str());
+    
+    // 如果正在说话，中断当前语音
+    if (device_state_ == kDeviceStateSpeaking) {
+        AbortSpeaking(kAbortReasonNone);
+    }
+    
+    // 发送卡片信息到服务器
+    Schedule([this, card]() {
+        if (!protocol_ || !protocol_->IsAudioChannelOpened()) {
+            // 如果通道没有打开，先打开通道
+            if (device_state_ == kDeviceStateIdle) {
+                SetDeviceState(kDeviceStateConnecting);
+                if (!protocol_->OpenAudioChannel()) {
+                    SetDeviceState(kDeviceStateIdle);
+                    return;
+                }
+                SetDeviceState(kDeviceStateListening);
+            }
+        }
+        
+        // 通知服务器检测到NFC卡片
+        if (protocol_ && protocol_->IsAudioChannelOpened()) {
+            protocol_->SendNfcCardDetected(card.uid);
+            
+            // 设置设备状态为监听，等待服务器回应
+            SetDeviceState(kDeviceStateListening);
+        }
+    });
 }
